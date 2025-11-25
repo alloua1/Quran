@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran Hifz Review Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .stat-icon.purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .stat-icon.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .stat-icon.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .stat-icon.blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+
+        .stat-content h3 {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .stat-content p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .review-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .quality-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .quality-btn {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .quality-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .quality-btn.weak { border-color: #f5576c; color: #f5576c; }
+        .quality-btn.medium { border-color: #ffa500; color: #ffa500; }
+        .quality-btn.strong { border-color: #38ef7d; color: #38ef7d; }
+
+        .quality-btn.weak.selected { background: #f5576c; color: white; }
+        .quality-btn.medium.selected { background: #ffa500; color: white; }
+        .quality-btn.strong.selected { background: #38ef7d; color: white; }
+
+        .submit-btn {
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .progress-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .progress-item {
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .progress-item h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .progress-item p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .milestone-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕌 Quran Hifz Mastery Tracker</h1>
+            <p>Master your memorization with daily tracking and insights</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon purple">🔥</div>
+                <div class="stat-content">
+                    <h3 id="streakCount">0</h3>
+                    <p>Day Streak</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div class="stat-content">
+                    <h3 id="totalReviews">0</h3>
+                    <p>Total Reviews</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">📊</div>
+                <div class="stat-content">
+                    <h3 id="avgQuality">0%</h3>
+                    <p>Avg Quality</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">🎯</div>
+                <div class="stat-content">
+                    <h3 id="masteredCount">0/80</h3>
+                    <p>Quarters Mastered</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="card">
+                <h2>📝 Daily Review Entry</h2>
+                <div class="review-form">
+                    <div class="form-group">
+                        <label>Select Juz (21-30)</label>
+                        <select id="juzSelect" onchange="updateQuarterOptions()">
+                            <option value="21">Juz 21 - اتْلُ مَا أُوحِيَ</option>
+                            <option value="22">Juz 22 - وَمَن يَقْنُتْ</option>
+                            <option value="23">Juz 23 - وَمَا لِيَ</option>
+                            <option value="24">Juz 24 - فَمَنْ أَظْلَمُ</option>
+                            <option value="25">Juz 25 - إِلَيْهِ يُرَدُّ</option>
+                            <option value="26">Juz 26 - حم</option>
+                            <option value="27">Juz 27 - قَالَ فَمَا خَطْبُكُمْ</option>
+                            <option value="28">Juz 28 - قَدْ سَمِعَ اللَّهُ</option>
+                            <option value="29">Juz 29 - تَبَارَكَ الَّذِي</option>
+                            <option value="30">Juz 30 - عَمَّ يَتَسَاءَلُونَ</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Select Quarter (1-8)</label>
+                        <select id="quarterSelect">
+                            <option value="1">Q1 - اتْلُ مَا أُوحِيَ</option>
+                            <option value="2">Q2 - وَاعْلَمُوا أَنَّمَا</option>
+                            <option value="3">Q3 - وَقَالَ الَّذِينَ</option>
+                            <option value="4">Q4 - وَمَن يَقْنُتْ</option>
+                            <option value="5">Q5 - وَمَا لِيَ</option>
+                            <option value="6">Q6 - وَلَا تُجَادِلُوا</option>
+                            <option value="7">Q7 - فَمَنْ أَظْلَمُ</option>
+                            <option value="8">Q8 - وَإِذَا مَسَّ</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Review Quality</label>
+                        <div class="quality-buttons">
+                            <button class="quality-btn weak" onclick="selectQuality('weak')">😰 Weak</button>
+                            <button class="quality-btn medium" onclick="selectQuality('medium')">🤔 Medium</button>
+                            <button class="quality-btn strong" onclick="selectQuality('strong')">💪 Strong</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Link Quality (Connection to adjacent quarters)</label>
+                        <div class="quality-buttons">
+                            <button class="quality-btn weak" onclick="selectLinkQuality('weak')">😰 Weak</button>
+                            <button class="quality-btn medium" onclick="selectLinkQuality('medium')">🤔 Medium</button>
+                            <button class="quality-btn strong" onclick="selectLinkQuality('strong')">💪 Strong</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notes (optional)</label>
+                        <textarea id="notesInput" rows="3" placeholder="Difficult verses, areas to improve..."></textarea>
+                    </div>
+
+                    <button class="submit-btn" onclick="submitReview()">Submit Today's Review</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📈 Quality Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="qualityPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="card">
+                <h2>📊 Progress by Juz</h2>
+                <div class="chart-container">
+                    <canvas id="juzBarChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📅 Recent Progress</h2>
+                <div class="progress-list" id="progressList">
+                    <p style="color: #999; text-align: center; padding: 40px;">No reviews yet. Start your first review!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="card">
+                <h2>🎯 Mastery Roadmap</h2>
+                <div class="chart-container" style="height: 200px;">
+                    <canvas id="masteryLineChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📅 Daily Tracker</h2>
+                <div class="chart-container" style="height: 200px;">
+                    <canvas id="dailyTrackerChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let reviews = [];
+        let selectedQuality = '';
+        let selectedLinkQuality = '';
+        let qualityChart, juzChart, masteryChart, dailyChart;
+
+        const quarterVerses = {
+            21: ['اتْلُ مَا أُوحِيَ', 'وَاعْلَمُوا أَنَّمَا', 'وَقَالَ الَّذِينَ', 'وَمَن يَقْنُتْ', 'قُلْنَا احْمِلْ', 'وَقِيلَ يَا أَرْضُ', 'وَإِلَىٰ عَادٍ', 'قَالُوا يَا شُعَيْبُ'],
+            22: ['وَمَن يَقْنُتْ', 'وَمَا كَانَ', 'وَلَا تَحْسَبَنَّ', 'أَفَمَن يَعْلَمُ', 'إِنَّمَا يُؤْمِنُ', 'وَإِذْ قَالَ', 'قَالَ يَا قَوْمِ', 'وَكَذَٰلِكَ أَنزَلْنَاهُ'],
+            23: ['وَمَا لِيَ', 'وَلَا تُجَادِلُوا', 'قَالَ إِنِّي', 'وَمَا مِن دَابَّةٍ', 'إِنَّ اللَّهَ', 'وَإِذْ قَالَ إِبْرَاهِيمُ', 'وَلَا تَكُونُوا', 'وَلَوْ أَنَّمَا'],
+            24: ['فَمَنْ أَظْلَمُ', 'وَإِذَا مَسَّ', 'أَلَا إِنَّ', 'اللَّهُ لَطِيفٌ', 'وَيَعْبُدُونَ', 'وَقَالَ الَّذِينَ', 'حم', 'فَإِنْ أَعْرَضُوا'],
+            25: ['إِلَيْهِ يُرَدُّ', 'وَلَوْ بَسَطَ', 'وَمَنْ أَضَلُّ', 'وَقَالَ الَّذِينَ', 'وَلَا يَزَالُ', 'قُلْ أَرَأَيْتُمْ', 'وَلَوْ شَاءَ رَبُّكَ', 'لِّيُنذِرَ'],
+            26: ['حم', 'إِنَّ الَّذِينَ', 'حم', 'وَمَا يَسْتَوِي', 'حم', 'قَالَ فَمَا خَطْبُكُمْ', 'وَمَا كُنتَ', 'وَالَّذِينَ يُحَاجُّونَ'],
+            27: ['قَالَ فَمَا خَطْبُكُمْ', 'وَمَا كُنتَ', 'وَالَّذِينَ يُحَاجُّونَ', 'حم', 'إِنَّ الَّذِينَ', 'حم', 'حم', 'وَيَوْمَ تَقُومُ'],
+            28: ['قَدْ سَمِعَ اللَّهُ', 'لَّا يَسْتَوِي', 'إِنَّا نَحْنُ', 'تَبَارَكَ الَّذِي', 'فَتَوَكَّلْ', 'وَإِذَا مَرُّوا', 'ن وَالْقَلَمِ', 'يَوْمَ يُكْشَفُ'],
+            29: ['تَبَارَكَ الَّذِي', 'وَقَالَ الَّذِينَ', 'إِنَّا بَلَوْنَاهُمْ', 'سَأَلَ سَائِلٌ', 'وَاصْبِرْ', 'إِنَّا أَرْسَلْنَا', 'وَالْمُرْسَلَاتِ', 'عَمَّ يَتَسَاءَلُونَ'],
+            30: ['عَمَّ يَتَسَاءَلُونَ', 'وَالنَّازِعَاتِ', 'عَبَسَ وَتَوَلَّىٰ', 'إِذَا الشَّمْسُ', 'وَاللَّيْلِ', 'لَمْ يَكُنِ', 'أَلْهَاكُمُ', 'وَالْعَصْرِ']
+        };
+
+        function updateQuarterOptions() {
+            const juz = document.getElementById('juzSelect').value;
+            const quarterSelect = document.getElementById('quarterSelect');
+            const verses = quarterVerses[juz];
+            
+            quarterSelect.innerHTML = '';
+            verses.forEach((verse, index) => {
+                const option = document.createElement('option');
+                option.value = index + 1;
+                option.textContent = `Q${index + 1} - ${verse}`;
+                quarterSelect.appendChild(option);
+            });
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('quranReviews');
+            if (saved) {
+                reviews = JSON.parse(saved);
+                updateAllCharts();
+                updateStats();
+                updateProgressList();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('quranReviews', JSON.stringify(reviews));
+        }
+
+        function selectQuality(quality) {
+            selectedQuality = quality;
+            document.querySelectorAll('.quality-buttons')[0].querySelectorAll('.quality-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectLinkQuality(quality) {
+            selectedLinkQuality = quality;
+            document.querySelectorAll('.quality-buttons')[1].querySelectorAll('.quality-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function submitReview() {
+            const juz = document.getElementById('juzSelect').value;
+            const quarter = document.getElementById('quarterSelect').value;
+            const notes = document.getElementById('notesInput').value;
+
+            if (!selectedQuality || !selectedLinkQuality) {
+                alert('Please select both review quality and link quality');
+                return;
+            }
+
+            const review = {
+                date: new Date().toISOString(),
+                juz: parseInt(juz),
+                quarter: parseInt(quarter),
+                quality: selectedQuality,
+                linkQuality: selectedLinkQuality,
+                notes: notes
+            };
+
+            reviews.push(review);
+            saveData();
+            updateAllCharts();
+            updateStats();
+            updateProgressList();
+
+            document.getElementById('notesInput').value = '';
+            selectedQuality = '';
+            selectedLinkQuality = '';
+            document.querySelectorAll('.quality-btn').forEach(btn => btn.classList.remove('selected'));
+
+            alert('Review submitted successfully! 🎉');
+        }
+
+        function updateStats() {
+            const today = new Date().toDateString();
+            const todayReviews = reviews.filter(r => new Date(r.date).toDateString() === today);
+            
+            let streak = 0;
+            let currentDate = new Date();
+            while (true) {
+                const dateStr = currentDate.toDateString();
+                const hasReview = reviews.some(r => new Date(r.date).toDateString() === dateStr);
+                if (!hasReview && streak > 0) break;
+                if (hasReview) streak++;
+                currentDate.setDate(currentDate.getDate() - 1);
+                if (streak > 100) break;
+            }
+
+            document.getElementById('streakCount').textContent = streak;
+            document.getElementById('totalReviews').textContent = reviews.length;
+
+            const qualityScores = { weak: 1, medium: 2, strong: 3 };
+            const avgScore = reviews.reduce((sum, r) => sum + qualityScores[r.quality], 0) / reviews.length;
+            const avgPercent = ((avgScore / 3) * 100).toFixed(0);
+            document.getElementById('avgQuality').textContent = reviews.length > 0 ? avgPercent + '%' : '0%';
+
+            const mastered = reviews.filter(r => r.quality === 'strong').length;
+            document.getElementById('masteredCount').textContent = mastered + '/80';
+        }
+
+        function updateProgressList() {
+            const list = document.getElementById('progressList');
+            if (reviews.length === 0) {
+                list.innerHTML = '<p style="color: #999; text-align: center; padding: 40px;">No reviews yet. Start your first review!</p>';
+                return;
+            }
+
+            const recentReviews = [...reviews].reverse().slice(0, 10);
+            list.innerHTML = recentReviews.map(r => {
+                const date = new Date(r.date).toLocaleDateString();
+                const qualityEmoji = r.quality === 'strong' ? '💪' : r.quality === 'medium' ? '🤔' : '😰';
+                const milestone = r.quality === 'strong' ? '<span class="milestone-badge">Mastered!</span>' : '';
+                
+                return `
+                    <div class="progress-item">
+                        <h4>${qualityEmoji} Juz ${r.juz}, Quarter ${r.quarter}</h4>
+                        <p>Quality: ${r.quality.toUpperCase()} | Link: ${r.linkQuality.toUpperCase()}</p>
+                        <p style="font-size: 0.85em; color: #999;">${date}</p>
+                        ${r.notes ? `<p style="margin-top: 5px; font-style: italic;">"${r.notes}"</p>` : ''}
+                        ${milestone}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateAllCharts() {
+            updateQualityChart();
+            updateJuzChart();
+            updateMasteryChart();
+            updateDailyTrackerChart();
+        }
+
+        function updateQualityChart() {
+            const weak = reviews.filter(r => r.quality === 'weak').length;
+            const medium = reviews.filter(r => r.quality === 'medium').length;
+            const strong = reviews.filter(r => r.quality === 'strong').length;
+
+            const ctx = document.getElementById('qualityPieChart').getContext('2d');
+            
+            if (qualityChart) qualityChart.destroy();
+            
+            qualityChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Weak', 'Medium', 'Strong'],
+                    datasets: [{
+                        data: [weak, medium, strong],
+                        backgroundColor: ['#f5576c', '#ffa500', '#38ef7d'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateJuzChart() {
+            const juzData = {};
+            for (let i = 21; i <= 30; i++) {
+                juzData[i] = { weak: 0, medium: 0, strong: 0 };
+            }
+
+            reviews.forEach(r => {
+                if (r.juz >= 21 && r.juz <= 30) {
+                    juzData[r.juz][r.quality] += 12.5; // Each quarter is 12.5% of the Juz (100/8)
+                }
+            });
+
+            const ctx = document.getElementById('juzBarChart').getContext('2d');
+            
+            if (juzChart) juzChart.destroy();
+            
+            juzChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(juzData).map(j => `Juz ${j}`),
+                    datasets: [
+                        {
+                            label: 'Strong',
+                            data: Object.values(juzData).map(d => d.strong),
+                            backgroundColor: '#38ef7d'
+                        },
+                        {
+                            label: 'Medium',
+                            data: Object.values(juzData).map(d => d.medium),
+                            backgroundColor: '#ffa500'
+                        },
+                        {
+                            label: 'Weak',
+                            data: Object.values(juzData).map(d => d.weak),
+                            backgroundColor: '#f5576c'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { 
+                            stacked: true, 
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const quarters = context.parsed.y / 12.5;
+                                    return context.dataset.label + ': ' + quarters.toFixed(1) + ' quarters (' + context.parsed.y.toFixed(1) + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateMasteryChart() {
+            const dailyMastery = {};
+            
+            reviews.forEach(r => {
+                const date = new Date(r.date).toLocaleDateString();
+                if (!dailyMastery[date]) dailyMastery[date] = 0;
+                if (r.quality === 'strong') dailyMastery[date]++;
+            });
+
+            const dates = Object.keys(dailyMastery).sort();
+            let cumulative = 0;
+            const cumulativeData = dates.map(date => {
+                cumulative += dailyMastery[date];
+                return cumulative;
+            });
+
+            const ctx = document.getElementById('masteryLineChart').getContext('2d');
+            
+            if (masteryChart) masteryChart.destroy();
+            
+            masteryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates.slice(-30),
+                    datasets: [{
+                        label: 'Cumulative Mastered Quarters',
+                        data: cumulativeData.slice(-30),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDailyTrackerChart() {
+            const last30Days = [];
+            const today = new Date();
+            
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                last30Days.push(date.toLocaleDateString());
+            }
+
+            const dailyReviewCount = {};
+            last30Days.forEach(date => {
+                dailyReviewCount[date] = 0;
+            });
+
+            reviews.forEach(r => {
+                const reviewDate = new Date(r.date).toLocaleDateString();
+                if (dailyReviewCount.hasOwnProperty(reviewDate)) {
+                    dailyReviewCount[reviewDate]++;
+                }
+            });
+
+            const ctx = document.getElementById('dailyTrackerChart').getContext('2d');
+            
+            if (dailyChart) dailyChart.destroy();
+            
+            dailyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: last30Days,
+                    datasets: [{
+                        label: 'Reviews per Day',
+                        data: Object.values(dailyReviewCount),
+                        backgroundColor: last30Days.map(date => {
+                            const count = dailyReviewCount[date];
+                            if (count === 0) return '#e0e0e0';
+                            if (count >= 3) return '#38ef7d';
+                            if (count >= 2) return '#ffa500';
+                            return '#667eea';
+                        }),
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                },
+                                label: function(context) {
+                                    const count = context.parsed.y;
+                                    if (count === 0) return 'No reviews';
+                                    return count + ' review' + (count > 1 ? 's' : '');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: 9
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onload = function() {
+            loadData();
+            updateQuarterOptions(); // Initialize quarter options
+            if (reviews.length === 0) {
+                updateQualityChart();
+                updateJuzChart();
+                updateMasteryChart();
+                updateDailyTrackerChart();
+            }
+        };
+    </script>
+</body>
+</html>
